@@ -214,8 +214,8 @@ build.
 **Repo:** https://github.com/Bush2209/theugclabfiles
 
 ```bash
-git push                  # deploys once GitHub is linked (see below)
-npx vercel --prod         # or deploy straight from the CLI, no link needed
+git push                  # auto-deploys — GitHub is linked to this project
+npx vercel --prod         # or deploy straight from the CLI
 ```
 
 Deploy config is committed for all three common static hosts — pick whichever
@@ -233,21 +233,21 @@ configs do this. `vite preview` works locally because Vite supplies the fallback
 itself, which can mask a missing rewrite in testing — so check a deep link on the
 real host after the first deploy.
 
-### Enabling auto-deploy on push
+### Auto-deploy on push
 
-The repo is public and the Vercel project exists, but the two are not linked yet,
-so `git push` does not deploy on its own. `npx vercel git connect` fails with:
+GitHub is linked to the Vercel project, so **every push to `main` deploys
+automatically** and you get a preview URL per commit.
+
+To reconnect later (new machine, new repo), `npx vercel git connect` links the
+remote in your local git config. If it reports:
 
 > You need to add a Login Connection to your GitHub account first.
 
-That one-time step has to happen in the browser:
+that step can only be done in the browser:
 
 1. Vercel dashboard → **Account Settings** → **Login Connections**
 2. Connect **GitHub** and authorise Vercel
 3. Project `ugc-investigator` → **Settings** → **Git** → connect `Bush2209/theugclabfiles`
-
-After that every push to `main` deploys automatically and you get a preview URL
-per commit.
 
 **Before launch:** replace `/og-image.png` with a real 1200×630 export. The meta
 tags reference it but no image ships — link previews on Instagram, WhatsApp and
