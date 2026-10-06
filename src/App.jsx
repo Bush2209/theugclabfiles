@@ -1,15 +1,21 @@
-import { useEffect } from 'react';
+import { Suspense, lazy, useEffect } from 'react';
 import { Routes, Route, useLocation, Link } from 'react-router-dom';
 import Navigation from './components/Navigation';
 import Footer from './components/Footer';
 import Home from './pages/Home';
-import CaseFiles from './pages/CaseFiles';
-import CaseDetail from './pages/CaseDetail';
-import Ingredients from './pages/Ingredients';
-import IngredientDetail from './pages/IngredientDetail';
-import Lab from './pages/Lab';
-import SubmitCase from './pages/SubmitCase';
-import WorkWithMe from './pages/WorkWithMe';
+
+/*
+ * The homepage ships in the main bundle; every other route is split out and
+ * fetched on demand. Keeps the first paint light on a content site where most
+ * visitors land on one page and read.
+ */
+const CaseFiles = lazy(() => import('./pages/CaseFiles'));
+const CaseDetail = lazy(() => import('./pages/CaseDetail'));
+const Ingredients = lazy(() => import('./pages/Ingredients'));
+const IngredientDetail = lazy(() => import('./pages/IngredientDetail'));
+const Lab = lazy(() => import('./pages/Lab'));
+const SubmitCase = lazy(() => import('./pages/SubmitCase'));
+const WorkWithMe = lazy(() => import('./pages/WorkWithMe'));
 
 /** Scrolls to top on navigation, but honours in-page hash links. */
 function ScrollManager() {
@@ -27,6 +33,21 @@ function ScrollManager() {
   }, [pathname, hash]);
 
   return null;
+}
+
+/**
+ * Deliberately plain — a route chunk is local and usually arrives in one
+ * frame. Anything animated here would read as a loading stall.
+ */
+function RouteFallback() {
+  return (
+    <div className="section flex min-h-[60vh] items-center justify-center py-24">
+      <p className="label-mono flex items-center gap-3 text-ink/40">
+        <span aria-hidden="true" className="h-2 w-2 rounded-full bg-lime" />
+        Opening file
+      </p>
+    </div>
+  );
 }
 
 function NotFound() {
@@ -54,23 +75,28 @@ function NotFound() {
 }
 
 export default function App() {
+  // Keyed on pathname so the page-transition animation replays on navigation.
+  const { pathname } = useLocation();
+
   return (
     <>
       <ScrollManager />
       <Navigation />
 
-      <main id="main" className="page-enter min-h-screen">
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/case-files" element={<CaseFiles />} />
-          <Route path="/case-files/:slug" element={<CaseDetail />} />
-          <Route path="/ingredients" element={<Ingredients />} />
-          <Route path="/ingredients/:slug" element={<IngredientDetail />} />
-          <Route path="/lab" element={<Lab />} />
-          <Route path="/submit" element={<SubmitCase />} />
-          <Route path="/work-with-me" element={<WorkWithMe />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+      <main id="main" key={pathname} className="page-enter min-h-screen">
+        <Suspense fallback={<RouteFallback />}>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/case-files" element={<CaseFiles />} />
+            <Route path="/case-files/:slug" element={<CaseDetail />} />
+            <Route path="/ingredients" element={<Ingredients />} />
+            <Route path="/ingredients/:slug" element={<IngredientDetail />} />
+            <Route path="/lab" element={<Lab />} />
+            <Route path="/submit" element={<SubmitCase />} />
+            <Route path="/work-with-me" element={<WorkWithMe />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Suspense>
       </main>
 
       <Footer />

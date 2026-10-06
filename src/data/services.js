@@ -8,6 +8,10 @@
  * photography or video URLs in.
  */
 
+import { cases } from './cases';
+import { ingredients } from './ingredients';
+import { site } from './site';
+
 export const services = [
   {
     id: 'svc-1',
@@ -169,6 +173,9 @@ export const portfolio = [
 ];
 
 /** Client-style placeholders — replace with real brands. */
+/**
+ * Client-side placeholders — replace with real brands.
+ */
 export const collaborationNotes = [
   {
     id: 'c1',
@@ -187,9 +194,15 @@ export const collaborationNotes = [
   },
 ];
 
+/**
+ * Work-with-me stats. Counts are derived from the actual data so the page
+ * can never advertise "8 case files" while the archive holds 9.
+ * `videoCount` is the only manual figure — it counts published posts, which
+ * is not the same thing as the portfolio sample above.
+ */
 export const workStats = [
-  { value: '30+', label: 'SHORT-FORM VIDEOS' },
-  { value: '8', label: 'CASE FILES' },
-  { value: '14', label: 'INGREDIENTS LOGGED' },
-  { value: '3', label: 'PLATFORMS' },
+  { value: String(portfolio.filter((p) => p.type === 'video').length), label: 'SELECTED VIDEOS' },
+  { value: String(cases.length), label: 'CASE FILES' },
+  { value: String(ingredients.length), label: 'INGREDIENTS LOGGED' },
+  { value: String(site.platforms.length), label: 'PLATFORMS' },
 ];

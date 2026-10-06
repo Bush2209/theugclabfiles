@@ -5,7 +5,8 @@ import { CircleMark, Magnifier, Squiggle, DotMark, Pin } from './Doodles';
 import { MediaFrame } from './MediaPlaceholder';
 import { usePointerField, useReducedMotion } from '../lib/hooks';
 import { site } from '../data/site';
-import { getCase } from '../data/cases';
+import { cases, getCase } from '../data/cases';
+import { ingredients } from '../data/ingredients';
 
 
 /**
@@ -284,14 +285,17 @@ export default function Hero() {
 
             <Reveal delay={300}>
               <dl className="mt-11 flex flex-wrap items-center gap-x-8 gap-y-4 border-t-2 border-ink/12 pt-6">
+                {/* Derived from the data so the counts can never drift. */}
                 {[
-                  ['08', 'CASE FILES'],
-                  ['14', 'INGREDIENTS LOGGED'],
-                  ['03', 'PLATFORMS'],
+                  [cases.length, 'CASE FILES'],
+                  [ingredients.length, 'INGREDIENTS LOGGED'],
+                  [site.platforms.length, 'PLATFORMS'],
                 ].map(([v, l]) => (
                   <div key={l}>
                     <dt className="label-mono text-ink/40">{l}</dt>
-                    <dd className="mt-1 font-display text-2xl font-extrabold leading-none text-ink">{v}</dd>
+                    <dd className="mt-1 font-display text-2xl font-extrabold leading-none text-ink">
+                      {String(v).padStart(2, '0')}
+                    </dd>
                   </div>
                 ))}
               </dl>

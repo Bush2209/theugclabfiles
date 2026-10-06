@@ -1,0 +1,19 @@
+{
+  "name": "The UGC Investigator",
+  "short_name": "UGC Investigator",
+  "description": "Products, claims, ingredients and real experiences — investigated, then turned into short-form content.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#FFF9EE",
+  "theme_color": "#B8F34A",
+  "categories": ["lifestyle", "education", "entertainment"],
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
