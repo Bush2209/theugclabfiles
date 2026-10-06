@@ -1,0 +1,254 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --paper-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.42'/%3E%3C/svg%3E");
+    --nav-h: 72px;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+
+  body {
+    @apply bg-ivory text-ink font-sans antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-display tracking-[-0.02em];
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  ::selection {
+    background: #b8f34a;
+    color: #20231f;
+  }
+
+  :focus-visible {
+    outline: 2px solid #20231f;
+    outline-offset: 3px;
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #fff9ee;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(32, 35, 31, 0.22);
+    border: 3px solid #fff9ee;
+    border-radius: 99px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(32, 35, 31, 0.4);
+  }
+}
+
+@layer components {
+  /* ---------- Layout ---------- */
+  .section {
+    @apply mx-auto w-full max-w-site px-5 sm:px-8;
+  }
+
+  /* ---------- Mono investigative label ---------- */
+  .label-mono {
+    @apply font-mono text-[10px] font-medium uppercase tracking-label sm:text-[11px];
+  }
+
+  /* ---------- Buttons ---------- */
+  .btn {
+    @apply inline-flex select-none items-center justify-center gap-2 rounded-full border-2 px-5 py-3
+      font-mono text-[11px] font-semibold uppercase tracking-label transition-all duration-300
+      sm:px-6 sm:py-3.5 sm:text-xs;
+  }
+
+  .btn-primary {
+    @apply btn border-ink bg-lime text-ink shadow-card;
+  }
+  .btn-primary:hover {
+    @apply -translate-y-0.5 shadow-lift;
+  }
+  .btn-primary:active {
+    @apply translate-y-0 shadow-card;
+  }
+
+  .btn-secondary {
+    @apply btn border-ink bg-white text-ink shadow-card;
+  }
+  .btn-secondary:hover {
+    @apply -translate-y-0.5 bg-butter shadow-lift;
+  }
+
+  .btn-ink {
+    @apply btn border-ink bg-ink text-ivory;
+  }
+  .btn-ink:hover {
+    @apply -translate-y-0.5 bg-ink/90 shadow-lift;
+  }
+
+  .btn-ghost {
+    @apply btn border-ink/25 bg-transparent text-ink;
+  }
+  .btn-ghost:hover {
+    @apply border-ink bg-white;
+  }
+
+  /* ---------- Cards ---------- */
+  .card {
+    @apply relative rounded-3xl border-2 border-ink/12 bg-white shadow-card transition-all duration-500;
+  }
+
+  .card-hover:hover {
+    @apply -translate-y-1 shadow-lift;
+  }
+
+  /* Sticky note */
+  .note {
+    @apply relative rounded-lg bg-butter p-5 font-hand text-[22px] leading-tight text-ink shadow-note;
+  }
+  .note-lavender {
+    @apply bg-lavender;
+  }
+  .note-cyan {
+    @apply bg-cyan;
+  }
+  .note-coral {
+    @apply bg-coral;
+  }
+
+  /* ---------- Textures ---------- */
+  .paper {
+    background-color: #fffdf7;
+    background-image: var(--paper-grain),
+      linear-gradient(rgba(32, 35, 31, 0.05) 1px, transparent 1px);
+    background-size: 180px 180px, 100% 26px;
+  }
+
+  .grain::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: var(--paper-grain);
+    opacity: 0.32;
+    mix-blend-mode: multiply;
+    pointer-events: none;
+    border-radius: inherit;
+  }
+
+  .grid-lab {
+    background-image: linear-gradient(rgba(32, 35, 31, 0.07) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(32, 35, 31, 0.07) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+
+  .grid-lab-soft {
+    background-image: linear-gradient(rgba(32, 35, 31, 0.045) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(32, 35, 31, 0.045) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+
+  .dot-lab {
+    background-image: radial-gradient(rgba(32, 35, 31, 0.2) 1.1px, transparent 1.1px);
+    background-size: 18px 18px;
+  }
+
+  .rule {
+    @apply border-t border-ink/12;
+  }
+
+  /* Hand-drawn underline */
+  .scribble-underline {
+    position: relative;
+    display: inline-block;
+  }
+  .scribble-underline::after {
+    content: '';
+    position: absolute;
+    left: -2%;
+    right: -2%;
+    bottom: -0.14em;
+    height: 0.42em;
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 12' preserveAspectRatio='none'%3E%3Cpath d='M2 8 C 22 2, 44 10, 64 5 S 104 2, 118 7' fill='none' stroke='%23B8F34A' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E");
+    pointer-events: none;
+  }
+
+  /* Reveal wrapper */
+  .reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition:
+      opacity 0.85s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.85s cubic-bezier(0.22, 1, 0.36, 1);
+    transition-delay: var(--reveal-delay, 0ms);
+  }
+  .reveal.is-visible {
+    opacity: 1;
+    transform: none;
+  }
+  .reveal-x {
+    transform: translateX(-24px);
+  }
+
+  /* Page transition */
+  .page-enter {
+    animation: page-in 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  /* Form fields */
+  .field {
+    @apply w-full rounded-2xl border-2 border-ink/15 bg-white px-4 py-3.5 font-sans text-[15px] text-ink
+      transition-colors duration-200 placeholder:text-ink/35 hover:border-ink/30 focus:border-ink focus:outline-none;
+  }
+
+  .field-label {
+    @apply label-mono mb-2 block text-ink/60;
+  }
+}
+
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+  .reveal {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}

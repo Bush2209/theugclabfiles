@@ -1,0 +1,8 @@
+# Netlify / Cloudflare Pages SPA fallback.
+# Client-side routes (/case-files/the-facewash-file) must resolve to the app
+# shell instead of 404ing on refresh or direct link.
+/*    /index.html   200
+
+# Vite fingerprints these filenames, so they are safe to cache forever.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable

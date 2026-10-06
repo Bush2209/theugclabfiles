@@ -1,0 +1,9 @@
+name = "ugc-investigator"
+compatibility_date = "2026-10-06"
+pages_build_output_dir = "dist"
+
+# Cloudflare Pages. `public/_redirects` already provides the SPA fallback.
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
