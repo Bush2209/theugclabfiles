@@ -208,6 +208,46 @@ build.
 
 ---
 
+## Deployment
+
+```bash
+npx vercel --prod          # first run prompts for login, then builds + deploys
+```
+
+Deploy config is committed for all three common static hosts — pick whichever
+suits you:
+
+| Host | Config | Notes |
+| --- | --- | --- |
+| Vercel | `vercel.json` | CLI install as a devDependency. `npx vercel --prod` |
+| Netlify | `netlify.toml` + `public/_redirects` | Or drag-and-drop the `dist/` folder |
+| Cloudflare Pages | `wrangler.toml` | `npx wrangler pages deploy dist` |
+
+**The SPA rewrite matters.** This is a client-routed React app, so a request for
+`/case-files/the-facewash-file` has to return the app shell, not a 404. All three
+configs do this. `vite preview` works locally because Vite supplies the fallback
+itself, which can mask a missing rewrite in testing — so check a deep link on the
+real host after the first deploy.
+
+**Before launch:** replace `/og-image.png` with a real 1200×630 export. The meta
+tags reference it but no image ships — link previews on Instagram, WhatsApp and
+Slack will show a blank tile until you add one.
+
+### Sitemap
+
+`sitemap.xml` is generated at build time by a small Vite plugin that reads
+`src/data/cases.js` and `src/data/ingredients.js`, so it stays in sync as you add
+investigations. Override the origin with `SITE_URL`:
+
+```bash
+SITE_URL=https://your-domain.com npm run build
+```
+
+---
+
 ## Stack
 
 React 19 · Vite 8 · React Router 7 · Tailwind 3 · oxlint · Playwright (QA only).
+
+Routes are code-split: the homepage ships in the main bundle and the other seven
+load on demand (main bundle 93 kB gzipped).

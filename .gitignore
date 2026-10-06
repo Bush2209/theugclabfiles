@@ -3,3 +3,4 @@ dist
 qa-shots
 .DS_Store
 *.local
+.vercel

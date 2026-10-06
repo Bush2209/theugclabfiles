@@ -8,7 +8,8 @@
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "qa": "node qa.mjs"
+    "qa": "node qa.mjs",
+    "og": "node scripts/make-og-image.mjs"
   },
   "dependencies": {
     "react": "^19.2.8",

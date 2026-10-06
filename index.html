@@ -12,23 +12,28 @@
     <meta name="theme-color" content="#FFF9EE" />
     <link rel="manifest" href="/manifest.webmanifest" />
 
-    <!-- Social sharing. Replace og-image.png with a real 1200×630 export
-         before launch; without it, link previews fall back to a blank tile. -->
+    <!-- Social sharing. Absolute URLs are required — scrapers ignore relative
+         paths. Update SITE_URL if the domain changes; regenerate the card with
+         `npm run og` after editing the brand name or tagline. -->
     <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://ugc-investigator.vercel.app/" />
     <meta property="og:site_name" content="The UGC Investigator" />
     <meta property="og:title" content="THE UGC INVESTIGATOR" />
     <meta
       property="og:description"
       content="The internet has questions. I have a case file. Products, claims, ingredients and real experiences — investigated."
     />
-    <meta property="og:image" content="/og-image.png" />
+    <meta property="og:image" content="https://ugc-investigator.vercel.app/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="The UGC Investigator — evidence cards and a magnifier on warm ivory." />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="THE UGC INVESTIGATOR" />
     <meta
       name="twitter:description"
       content="Products, claims, ingredients and real experiences — investigated, then turned into content."
     />
-    <meta name="twitter:image" content="/og-image.png" />
+    <meta name="twitter:image" content="https://ugc-investigator.vercel.app/og-image.png" />
 
     <title>THE UGC INVESTIGATOR — Products. Claims. Ingredients. Real experiences.</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
