@@ -1,30 +1,35 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Reveal from './Reveal';
-import { submissionTypes } from '../data/site';
+import { site, submissionTypes } from '../data/site';
+import { track } from '../lib/signals';
 import { CrossMark, Squiggle } from './Doodles';
 
 /**
  * SubmissionForm — the "send it to the lab" form.
  *
- * Validation runs entirely in the browser. On success it swaps to a playful
- * success state with a generated case reference.
+ * Validation runs in the browser. On success it POSTs to
+ * `site.forms.endpoint` if one is configured; otherwise it runs in demo mode
+ * and the success state says plainly that nothing was transmitted.
  *
- * To make it real, wire `onSubmit` to your backend, Formspree, Basin, etc.
+ * The form can be pre-filled from the URL (see SubmitCase) so that "add your
+ * experience" on a case file arrives already attributed to that case.
  */
-export default function SubmissionForm() {
-  const [values, setValues] = useState({
+export default function SubmissionForm({ initial = null, caseSlug = '' }) {
+  const [values, setValues] = useState(() => ({
     name: '',
     contact: '',
-    type: 'PRODUCT',
-    product: '',
+    type: initial?.type ?? 'PRODUCT',
+    product: initial?.product ?? '',
     question: '',
     image: null,
-    why: '',
-  });
+    why: initial?.why ?? '',
+  }));
+  const [agreed, setAgreed] = useState(false);
   const [errors, setErrors] = useState({});
   const [submitted, setSubmitted] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [failure, setFailure] = useState('');
 
   const set = (key) => (value) => {
     setValues((v) => ({ ...v, [key]: value }));
@@ -36,8 +41,10 @@ export default function SubmissionForm() {
     [values.image]
   );
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
+    setFailure('');
+
     const next = {};
 
     if (values.question.trim().length < 12) {
@@ -46,9 +53,13 @@ export default function SubmissionForm() {
     if (!values.product.trim()) {
       next.product = 'Which product or brand is this about?';
     }
+    if (!agreed) {
+      next.agreed = 'Confirm you are happy for this to be read and stored.';
+    }
 
     setErrors(next);
     if (Object.keys(next).length) {
+      track('case_submit_invalid', { fields: Object.keys(next) });
       // move focus to the first problem so keyboard users land on it
       const first = document.querySelector('[data-error="true"]');
       first?.scrollIntoView({ block: 'center', behavior: 'smooth' });
@@ -56,16 +67,57 @@ export default function SubmissionForm() {
     }
 
     setSubmitting(true);
-    // Simulated request — replace with a real endpoint.
-    setTimeout(() => {
-      const ref = `INTAKE #${Math.floor(100 + Math.random() * 899)}`;
-      setSubmitted(ref);
+
+    const endpoint = site.forms.endpoint;
+    const draft = {
+      name: values.name.trim(),
+      contact: values.contact.trim(),
+      type: values.type,
+      product: values.product.trim(),
+      question: values.question.trim(),
+      why: values.why.trim(),
+      hasImage: Boolean(values.image),
+      case: caseSlug || null,
+    };
+
+    try {
+      if (endpoint) {
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify(draft),
+        });
+        if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      } else {
+        // Demo mode: keep the interaction realistic without pretending to send.
+        await new Promise((resolve) => setTimeout(resolve, 700));
+      }
+
+      track('case_submitted', {
+        type: values.type,
+        has_contact: Boolean(draft.contact),
+        has_image: draft.hasImage,
+        case: draft.case,
+        delivered: Boolean(endpoint),
+      });
+
+      setSubmitted({
+        ref: `INTAKE #${Math.floor(100 + Math.random() * 899)}`,
+        demo: !endpoint,
+        draft,
+      });
+    } catch {
+      track('case_submit_failed', { type: values.type });
+      setFailure(
+        "The lab didn't receive that — the connection failed. Try again in a moment, or use the direct line in the footer."
+      );
+    } finally {
       setSubmitting(false);
-    }, 700);
+    }
   }
 
   if (submitted) {
-    return <SuccessState caseRef={submitted} />;
+    return <SuccessState caseRef={submitted.ref} demo={submitted.demo} draft={submitted.draft} />;
   }
 
   return (
@@ -221,11 +273,56 @@ export default function SubmissionForm() {
             />
           </div>
 
+          {/* Consent — explicit, because this is the one place personal details
+              can be shared. Never pre-checked. */}
+          <div>
+            <label
+              htmlFor="agreed"
+              className="flex cursor-pointer items-start gap-3 text-[13px] leading-relaxed text-ink/65"
+            >
+              <input
+                id="agreed"
+                type="checkbox"
+                checked={agreed}
+                onChange={(e) => {
+                  setAgreed(e.target.checked);
+                  setErrors((prev) => ({ ...prev, agreed: undefined }));
+                }}
+                aria-invalid={Boolean(errors.agreed)}
+                aria-describedby={errors.agreed ? 'agreed-error' : undefined}
+                className="mt-0.5 h-4 w-4 shrink-0 accent-ink"
+              />
+              <span>
+                I&rsquo;m happy for this to be read and stored so the case can be investigated.
+                <span className="text-ink/40"> · </span>
+                <Link
+                  to="/privacy"
+                  className="underline decoration-ink/25 underline-offset-4 hover:decoration-ink"
+                >
+                  What that means
+                </Link>
+              </span>
+            </label>
+            {errors.agreed ? (
+              <p id="agreed-error" className="mt-2 flex items-start gap-2 text-[13px] text-coral">
+                <span aria-hidden="true">▲</span>
+                {errors.agreed}
+              </p>
+            ) : null}
+          </div>
+
           {/* Honeypot */}
           <div className="absolute -left-[9999px]" aria-hidden="true">
             <label htmlFor="company">Company</label>
             <input id="company" type="text" tabIndex={-1} autoComplete="off" name="company" />
           </div>
+
+          {failure ? (
+            <p role="alert" className="flex items-start gap-2 rounded-xl border-2 border-coral bg-coral/10 px-4 py-3 text-[13px] leading-relaxed text-ink">
+              <span aria-hidden="true" className="mt-0.5">▲</span>
+              {failure}
+            </p>
+          ) : null}
 
           <div className="flex flex-col gap-4 border-t-2 border-ink/12 pt-7 sm:flex-row sm:items-center sm:justify-between">
             <p className="label-mono max-w-xs text-ink/45">
@@ -280,8 +377,24 @@ function Field({
   );
 }
 
-/** Playful success state shown after a valid submission. */
-function SuccessState({ caseRef }) {
+/** Playful success state. Honest about whether anything was actually sent. */
+function SuccessState({ caseRef, demo, draft }) {
+  const mailtoHref = demo
+    ? `mailto:${site.email}?subject=${encodeURIComponent(`Case submission — ${draft.product}`)}&body=${encodeURIComponent(
+        [
+          `Product: ${draft.product}`,
+          `Type: ${draft.type}`,
+          '',
+          draft.question,
+          '',
+          draft.why ? `Why it matters: ${draft.why}` : '',
+          draft.case ? `Related case: ${draft.case}` : '',
+        ]
+          .filter(Boolean)
+          .join('\n')
+      )}`
+    : '';
+
   return (
     <Reveal className="relative">
       <div className="relative overflow-hidden rounded-3xl border-2 border-ink bg-lime p-8 shadow-lift sm:p-14">
@@ -297,25 +410,48 @@ function SuccessState({ caseRef }) {
             </svg>
           </span>
 
-          <p className="label-mono mt-6 text-ink/60">Evidence received</p>
+          <p className="label-mono mt-6 text-ink/60">
+            {demo ? 'Draft ready' : 'Evidence received'}
+          </p>
           <h2 className="mt-3 font-display text-[clamp(2rem,6vw,3.6rem)] font-extrabold leading-[0.96] tracking-[-0.03em] text-ink">
-            Case received. 🔎
+            {demo ? 'Case drafted. 🔎' : 'Case received. 🔎'}
           </h2>
           <p className="mx-auto mt-4 max-w-md text-[17px] leading-relaxed text-ink/75">
-            Evidence successfully entered the lab.
+            {demo
+              ? 'Your case is composed and valid — but this build has nothing connected to receive it yet.'
+              : 'Evidence successfully entered the lab.'}
           </p>
 
           <div className="mx-auto mt-8 inline-flex flex-col items-center gap-2 rounded-2xl border-2 border-ink bg-white px-6 py-4">
             <span className="label-mono text-ink/45">Case status</span>
             <span className="font-mono text-sm font-bold uppercase tracking-[0.16em] text-ink">
-              <span aria-hidden="true" className="mr-2 inline-block h-2 w-2 animate-pulse-dot rounded-full bg-coral" />
-              Queued
+              <span
+                aria-hidden="true"
+                className={`mr-2 inline-block h-2 w-2 rounded-full ${
+                  demo ? 'bg-butter' : 'animate-pulse-dot bg-coral'
+                }`}
+              />
+              {demo ? 'Not sent' : 'Queued'}
             </span>
           </div>
 
           <p className="mt-4 font-mono text-[10px] uppercase tracking-[0.14em] text-ink/45">
             Your reference: {caseRef}
           </p>
+
+          {demo ? (
+            <div className="mx-auto mt-7 max-w-md rounded-2xl border-2 border-ink bg-white p-5 text-left">
+              <p className="label-mono text-ink/50">One more step</p>
+              <p className="mt-2 text-[13.5px] leading-relaxed text-ink/70">
+                Nothing was transmitted. Send the draft from your mail app and it reaches the lab
+                properly — subject, product and question are already filled in.
+              </p>
+              <a href={mailtoHref} className="btn-primary mt-4 w-full">
+                Send it by email
+                <span aria-hidden="true">→</span>
+              </a>
+            </div>
+          ) : null}
 
           <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link to="/case-files" className="btn-ink">
@@ -328,7 +464,10 @@ function SuccessState({ caseRef }) {
           </div>
 
           <ul className="mx-auto mt-10 flex max-w-lg flex-wrap justify-center gap-2">
-            {['Question logged', 'Evidence attached', 'Queued for triage'].map((s) => (
+            {(demo
+              ? ['Question logged', 'Draft composed', 'Ready to send']
+              : ['Question logged', 'Evidence attached', 'Queued for triage']
+            ).map((s) => (
               <li
                 key={s}
                 className="rounded-full border-2 border-ink bg-white/80 px-3 py-1 font-mono text-[9.5px] uppercase tracking-[0.12em] text-ink/70"

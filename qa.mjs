@@ -34,6 +34,7 @@ const ROUTES = [
   { path: '/lab', name: 'lab' },
   { path: '/submit', name: 'submit' },
   { path: '/work-with-me', name: 'work' },
+  { path: '/privacy', name: 'privacy' },
   { path: '/does-not-exist', name: 'not-found' },
 ];
 
@@ -103,6 +104,24 @@ function audit() {
 const browser = await chromium.launch();
 await mkdir(OUT, { recursive: true });
 
+/**
+ * Evaluate in the page, retrying if the document was replaced underneath us.
+ * A Vite HMR reload or dev-server restart mid-sweep otherwise surfaces as a
+ * scary "execution context destroyed" instead of the defect it is not.
+ */
+async function evaluateStable(page, fn, arg) {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      return await page.evaluate(fn, arg);
+    } catch (err) {
+      if (!/Execution context was destroyed|navigat/i.test(String(err))) throw err;
+      await page.waitForLoadState('networkidle').catch(() => {});
+      await page.waitForTimeout(400);
+    }
+  }
+  throw new Error('page kept navigating during evaluation');
+}
+
 const consoleErrors = [];
 const failures = [];
 let frameTotal = 0;
@@ -116,6 +135,16 @@ for (const vp of VIEWPORTS) {
     });
     const page = await ctx.newPage();
 
+    // Pre-decide the privacy prompt so visual frames stay clean; the banner
+    // itself is exercised explicitly in the interaction tests below.
+    await ctx.addInitScript(() => {
+      try {
+        window.localStorage.setItem('ugc-lab:consent', 'denied');
+      } catch {
+        /* storage unavailable — banner will show, which is still valid */
+      }
+    });
+
     page.on('console', (m) => {
       const text = m.text();
       // Font CDN hiccups are environmental, not site defects.
@@ -127,7 +156,7 @@ for (const vp of VIEWPORTS) {
 
     await page.goto(BASE + route.path, { waitUntil: 'networkidle' });
 
-    const pageHeight = await page.evaluate(async () => {
+    const pageHeight = await evaluateStable(page, async () => {
       await new Promise((resolve) => {
         let y = 0;
         const step = () => {
@@ -143,7 +172,7 @@ for (const vp of VIEWPORTS) {
       return document.body.scrollHeight;
     });
 
-    const report = await page.evaluate(audit);
+    const report = await evaluateStable(page, audit);
     const label = `${route.name} @ ${vp.name}`;
 
     const issues = [];
@@ -160,7 +189,7 @@ for (const vp of VIEWPORTS) {
     // sticky headers and scroll-reveal transforms
     let i = 0;
     for (let y = 0; y < pageHeight; y += vp.height * 0.92) {
-      await page.evaluate((top) => window.scrollTo({ top, behavior: 'instant' }), y);
+      await evaluateStable(page, (top) => window.scrollTo({ top, behavior: 'instant' }), y);
       await page.waitForTimeout(300);
       const file = `${OUT}/${vp.name}-${route.name}-${String(i).padStart(2, '0')}.png`;
       await page.screenshot({ path: file });
@@ -182,15 +211,84 @@ const assert = (label, ok) => {
   if (!ok) failures.push(`interaction: ${label}`);
 };
 
+// ---- consent gate + feedback loop -----------------------------------------
+await page.goto(`${BASE}/`, { waitUntil: 'networkidle' });
+assert(
+  'consent prompt appears on first visit',
+  (await page.getByRole('region', { name: /privacy choice/i }).count()) > 0
+);
+await page.getByRole('button', { name: /^allow$/i }).click();
+await page.waitForTimeout(250);
+assert(
+  'consent prompt dismisses on allow',
+  (await page.getByRole('region', { name: /privacy choice/i }).count()) === 0
+);
+const storedConsent = await page.evaluate(() => localStorage.getItem('ugc-lab:consent'));
+assert(`consent persisted as granted (${storedConsent})`, storedConsent === 'granted');
+
+await page.goto(`${BASE}/ingredients`, { waitUntil: 'networkidle' });
+await page.fill('#ingredient-search', 'qqqqzz');
+await page.waitForTimeout(700);
+const signals = await page.evaluate(() => window.__ugcSignals?.() ?? []);
+const zeroResult = signals.filter((s) => s.event === 'ingredient_search_zero');
+assert(
+  `zero-result search recorded (${zeroResult.length} event)`,
+  zeroResult.length > 0 && zeroResult[0].props.query === 'qqqqzz'
+);
+
+await page.goto(`${BASE}/case-files/the-facewash-file`, { waitUntil: 'networkidle' });
+await page.getByRole('button', { name: /that answered it/i }).click();
+await page.waitForTimeout(300);
+assert('verdict feedback acknowledges', (await page.getByText(/logged/i).count()) > 0);
+
+await page.goto(`${BASE}/submit?case=the-facewash-file&type=EXPERIENCE`, {
+  waitUntil: 'networkidle',
+});
+assert(
+  'case link prefills the intake form',
+  (await page.getByText(/filing against/i).count()) > 0
+);
+
+await page.goto(`${BASE}/privacy`, { waitUntil: 'networkidle' });
+assert(
+  'privacy page reflects the recorded choice',
+  (await page.getByText(/their current choice|your current choice/i).count()) > 0 &&
+    (await page.getByText(/^Allowed$/i).count()) > 0
+);
+assert(
+  'consent can be reopened from the privacy page',
+  (await page.getByRole('button', { name: /open consent settings/i }).count()) > 0
+);
+await page.getByRole('button', { name: /open consent settings/i }).click();
+await page.waitForTimeout(250);
+assert(
+  'reopened prompt offers a fresh choice',
+  (await page.getByRole('region', { name: /privacy choice/i }).count()) > 0
+);
+await page.getByRole('button', { name: /^no thanks$/i }).click();
+await page.waitForTimeout(250);
+const withdrawn = await page.evaluate(() => localStorage.getItem('ugc-lab:consent'));
+assert(`consent can be withdrawn (${withdrawn})`, withdrawn === 'denied');
+
+// ---- intake form -----------------------------------------------------------
 await page.goto(`${BASE}/submit`, { waitUntil: 'networkidle' });
 await page.getByRole('button', { name: /send to the lab/i }).click();
 await page.waitForTimeout(300);
 assert('form blocks empty submit', (await page.locator('[id$="-error"]').count()) > 0);
+assert('form requires explicit consent', (await page.locator('#agreed-error').count()) > 0);
 await page.fill('#question', 'Does the expensive one do anything the cheap one does not?');
 await page.fill('#product', 'The moisturiser on the top shelf');
+await page.check('#agreed');
 await page.getByRole('button', { name: /send to the lab/i }).click();
 await page.waitForTimeout(1300);
-assert('form reaches success state', (await page.getByText(/case received/i).count()) > 0);
+assert(
+  'form reaches success state',
+  (await page.getByText(/case (received|drafted)/i).count()) > 0
+);
+assert(
+  'success state is honest about delivery',
+  (await page.getByText(/nothing was transmitted/i).count()) > 0
+);
 await page.screenshot({ path: `${OUT}/interaction-form-success.png` });
 
 await page.goto(`${BASE}/work-with-me`, { waitUntil: 'networkidle' });

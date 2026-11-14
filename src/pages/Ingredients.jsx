@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Reveal from '../components/Reveal';
 import SearchBar from '../components/SearchBar';
@@ -10,6 +10,7 @@ import { DotMark, PlusMark, Squiggle } from '../components/Doodles';
 import { INGREDIENT_CATEGORIES, ingredients } from '../data/ingredients';
 import { INGREDIENT_CATEGORY_ACCENT } from '../lib/theme';
 import { useDebounced } from '../lib/hooks';
+import { track } from '../lib/signals';
 
 /** Matches name, aka, category, tags and description copy. */
 function matches(ingredient, query) {
@@ -52,6 +53,23 @@ export default function Ingredients() {
   }, [debounced, filter]);
 
   const searching = Boolean(debounced.trim());
+
+  /*
+   * A zero-result search is the single most useful signal on this site: it is
+   * someone naming something the database does not cover. Deduped on
+   * query+result count so refining the filter does not log the same search twice.
+   */
+  const lastTracked = useRef('');
+  useEffect(() => {
+    const q = debounced.trim().toLowerCase();
+    if (!q) return;
+    const key = `${q}|${results.length}`;
+    if (lastTracked.current === key) return;
+    lastTracked.current = key;
+
+    track('ingredient_search', { query: q, results: results.length });
+    if (results.length === 0) track('ingredient_search_zero', { query: q });
+  }, [debounced, results.length]);
 
   return (
     <>

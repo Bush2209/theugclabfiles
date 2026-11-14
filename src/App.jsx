@@ -2,6 +2,7 @@ import { Suspense, lazy, useEffect } from 'react';
 import { Routes, Route, useLocation, Link } from 'react-router-dom';
 import Navigation from './components/Navigation';
 import Footer from './components/Footer';
+import ConsentBanner from './components/ConsentBanner';
 import Home from './pages/Home';
 
 /*
@@ -16,6 +17,7 @@ const IngredientDetail = lazy(() => import('./pages/IngredientDetail'));
 const Lab = lazy(() => import('./pages/Lab'));
 const SubmitCase = lazy(() => import('./pages/SubmitCase'));
 const WorkWithMe = lazy(() => import('./pages/WorkWithMe'));
+const Privacy = lazy(() => import('./pages/Privacy'));
 
 /** Scrolls to top on navigation, but honours in-page hash links. */
 function ScrollManager() {
@@ -94,12 +96,14 @@ export default function App() {
             <Route path="/lab" element={<Lab />} />
             <Route path="/submit" element={<SubmitCase />} />
             <Route path="/work-with-me" element={<WorkWithMe />} />
+            <Route path="/privacy" element={<Privacy />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
       </main>
 
       <Footer />
+      <ConsentBanner />
     </>
   );
 }

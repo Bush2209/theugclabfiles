@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { site, footerLinks, footerTicker } from '../data/site';
+import { openConsentSettings } from '../lib/signals';
 
 /**
  * Footer — brand block, navigation, socials, and the closing ticker.
@@ -115,7 +116,24 @@ export default function Footer() {
           <p className="label-mono text-ink/40">
             © {YEAR} {site.name}
           </p>
-          <p className="label-mono flex flex-wrap items-center gap-2 text-ink/45">
+
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+            <Link
+              to="/privacy"
+              className="label-mono text-ink/50 underline decoration-ink/20 underline-offset-4 transition-colors hover:text-ink hover:decoration-ink"
+            >
+              Privacy &amp; data
+            </Link>
+            <button
+              type="button"
+              onClick={openConsentSettings}
+              className="label-mono text-ink/50 underline decoration-ink/20 underline-offset-4 transition-colors hover:text-ink hover:decoration-ink"
+            >
+              Data settings
+            </button>
+          </div>
+
+          <p className="label-mono flex flex-wrap items-center gap-2 text-ink/40">
             <span>CASE FILES</span>
             <span aria-hidden="true">•</span>
             <span>INGREDIENTS</span>

@@ -30,6 +30,7 @@ function sitemapPlugin(siteUrl) {
         { loc: '/lab', priority: '0.7', freq: 'monthly' },
         { loc: '/submit', priority: '0.8', freq: 'monthly' },
         { loc: '/work-with-me', priority: '0.8', freq: 'monthly' },
+        { loc: '/privacy', priority: '0.3', freq: 'yearly' },
         ...caseSlugs.map((s) => ({ loc: `/case-files/${s}`, priority: '0.8', freq: 'monthly' })),
         ...ingredientSlugs.map((s) => ({ loc: `/ingredients/${s}`, priority: '0.7', freq: 'monthly' })),
       ]

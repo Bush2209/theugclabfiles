@@ -1,10 +1,26 @@
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import Reveal from '../components/Reveal';
 import SubmissionForm from '../components/SubmissionForm';
-import { submissionExamples } from '../data/site';
+import { submissionExamples, submissionTypes } from '../data/site';
+import { cases } from '../data/cases';
 import { PlusMark, DotMark } from '../components/Doodles';
 
 export default function SubmitCase() {
+  /*
+   * The case files link here with `?case=<slug>&type=EXPERIENCE` from the
+   * "add your experience" panel and the verdict feedback block. Reading the
+   * slug keeps audience reports attributed to the case they belong to, which
+   * is what makes them usable as evidence later.
+   */
+  const [params] = useSearchParams();
+  const caseSlug = params.get('case') ?? '';
+  const requestedType = params.get('type');
+  const linkedCase = cases.find((c) => c.slug === caseSlug);
+
+  const initial = {
+    type: submissionTypes.includes(requestedType) ? requestedType : undefined,
+    why: linkedCase ? `Experience with “${linkedCase.title}”.` : undefined,
+  };
   return (
     <>
       {/* ---------------- Header ---------------- */}
@@ -99,7 +115,25 @@ export default function SubmitCase() {
           </Reveal>
 
           <div className="mt-10">
-            <SubmissionForm />
+            {linkedCase ? (
+              <Reveal className="mb-6">
+                <div className="flex flex-col gap-3 rounded-2xl border-2 border-ink bg-cyan/40 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-[14px] leading-relaxed text-ink/75">
+                    Filing against{' '}
+                    <span className="font-mono text-[11px] font-bold uppercase tracking-[0.12em] text-ink">
+                      #{linkedCase.number} · {linkedCase.title}
+                    </span>
+                  </p>
+                  <Link
+                    to={`/case-files/${linkedCase.slug}`}
+                    className="shrink-0 font-mono text-[10px] uppercase tracking-[0.13em] text-ink/60 underline decoration-ink/25 underline-offset-4 hover:text-ink hover:decoration-ink"
+                  >
+                    Back to the case →
+                  </Link>
+                </div>
+              </Reveal>
+            ) : null}
+            <SubmissionForm initial={initial} caseSlug={linkedCase?.slug ?? ''} />
           </div>
 
           <Reveal delay={160} className="mt-8 text-center">

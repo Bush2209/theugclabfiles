@@ -6,6 +6,7 @@ import CTA from '../components/CTA';
 import PlaceholderNotice from '../components/PlaceholderNotice';
 import { CASE_CATEGORIES, CASE_STATUSES, cases, sortByDate } from '../data/cases';
 import { CASE_CATEGORY_ACCENT } from '../lib/theme';
+import { track } from '../lib/signals';
 import { PlusMark } from '../components/Doodles';
 
 export default function CaseFiles() {
@@ -28,6 +29,12 @@ export default function CaseFiles() {
   const open = cases.filter((c) => c.status === CASE_STATUSES.OPEN).length;
   const closed = cases.filter((c) => c.status === CASE_STATUSES.CLOSED).length;
   const needs = cases.filter((c) => c.status === CASE_STATUSES.NEEDS).length;
+
+  /** Filter changes are demand data: which verticals people reach for first. */
+  function applyFilter(next) {
+    setFilter(next);
+    track('case_filter', { category: next });
+  }
 
   return (
     <>
@@ -97,7 +104,7 @@ export default function CaseFiles() {
           <CategoryFilter
             options={CASE_CATEGORIES}
             value={filter}
-            onChange={setFilter}
+            onChange={applyFilter}
             counts={counts}
             accentMap={CASE_CATEGORY_ACCENT}
             label="Filter case files"
@@ -121,7 +128,7 @@ export default function CaseFiles() {
               <p className="mx-auto mt-2 max-w-sm text-[15px] leading-relaxed text-ink/60">
                 That drawer is empty. Send a question to the lab and it might get opened next.
               </p>
-              <button type="button" onClick={() => setFilter('ALL')} className="btn-secondary mt-6">
+              <button type="button" onClick={() => applyFilter('ALL')} className="btn-secondary mt-6">
                 Show all cases
               </button>
             </div>

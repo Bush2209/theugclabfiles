@@ -3,6 +3,7 @@ import { Link, Navigate, useParams } from 'react-router-dom';
 import Reveal from '../components/Reveal';
 import StatusBadge from '../components/StatusBadge';
 import VerdictBadge from '../components/VerdictBadge';
+import VerdictFeedback from '../components/VerdictFeedback';
 import ProductCard from '../components/ProductCard';
 import EvidenceCard from '../components/EvidenceCard';
 import IngredientTag from '../components/IngredientTag';
@@ -384,7 +385,7 @@ export default function CaseDetail() {
                   all of it is evidence.
                 </p>
               </div>
-              <Link to="/submit" className="btn-ink shrink-0">
+              <Link to={`/submit?case=${data.slug}&type=EXPERIENCE`} className="btn-ink shrink-0">
                 Add your experience
                 <span aria-hidden="true">→</span>
               </Link>
@@ -461,6 +462,11 @@ export default function CaseDetail() {
                 );
               })}
             </ul>
+          </Reveal>
+
+          {/* Verdict feedback — the loop closing signal */}
+          <Reveal delay={150} className="mx-auto mt-10 max-w-3xl">
+            <VerdictFeedback caseSlug={data.slug} verdict={data.verdict.label} />
           </Reveal>
 
           {/* Watch the investigation */}

@@ -25,6 +25,32 @@ export const site = {
   ],
   email: 'hello@theuginvestigator.com',
   platforms: ['Instagram', 'YouTube', 'TikTok'],
+
+  /**
+   * INTAKE
+   * Where case submissions go. Leave `endpoint` empty to run in demo mode:
+   * the form validates and shows the success state, but says plainly that
+   * nothing was transmitted.
+   *
+   * Set it to a URL that accepts POST application/json to go live, e.g. a
+   * serverless function, Formspree, or a Supabase edge function.
+   */
+  forms: {
+    endpoint: '',
+    // Shown in the success state when `endpoint` is empty.
+    demoNotice: true,
+  },
+
+  /**
+   * PRIVACY
+   * Drives the wording on /privacy. Flip `storageLive` to true only once the
+   * intake endpoint is configured — the page must never claim data is stored
+   * before it actually is.
+   */
+  privacy: {
+    storageLive: false,
+    storeName: '',
+  },
 };
 
 export const navLinks = [
@@ -166,6 +192,7 @@ export const submissionTypes = [
   'BRAND CLAIM',
   'COMPARISON',
   'LIFESTYLE QUESTION',
+  'EXPERIENCE',
   'OTHER',
 ];
 

@@ -28,8 +28,9 @@ npm run qa       # visual + a11y + interaction sweep (see QA)
 | `/ingredients` | Ingredient Database | Search + category filters over the ingredient library |
 | `/ingredients/:slug` | Ingredient File | Reusable template — includes the pairing relationship map |
 | `/lab` | The Lab | 6-step methodology + "what we don't do" transparency rules |
-| `/submit` | Submit a Case | Validated intake form + playful success state |
+| `/submit` | Submit a Case | Validated intake form + honest success state (demo mode until an endpoint is set) |
 | `/work-with-me` | Work With Me | Services, portfolio grid, video lightbox |
+| `/privacy` | Privacy & Data | Consent state, what is recorded, how to withdraw |
 | anything else | Not Found | |
 
 Case and ingredient detail pages redirect to their index if the slug is unknown.
@@ -53,6 +54,9 @@ illustrative sample copy written to demonstrate the system.** Specifically:
 - Every `video.url` is empty, so case verdicts show a "video not linked" panel
   rather than a fake player.
 - View counts, durations and platform handles are sample data.
+- The intake form has no endpoint configured, so it runs in demo mode and says so
+  instead of pretending a submission was delivered. See
+  [Wiring up the form](#wiring-up-the-form).
 
 To publish: replace the copy, add real sources to `ingredients[].sources`, drop
 in real media URLs, set `isPlaceholder: false`, then delete `PlaceholderNotice`
@@ -118,10 +122,76 @@ for names that appear on labels but are not profiled yet (they render as muted
 
 ### Wiring up the form
 
-`SubmissionForm` validates in the browser and fakes the request with a
-`setTimeout`. Replace that call in `handleSubmit` with a real POST (Formspree,
-Basin, your own endpoint). The success state already generates a case reference
-and renders `CASE STATUS: QUEUED`.
+`SubmissionForm` validates in the browser, then POSTs JSON to
+`site.forms.endpoint` in `src/data/site.js`. With that value empty the form runs
+in **demo mode**: it validates and shows a "Case drafted" state that says plainly
+nothing was transmitted, plus a pre-filled `mailto:` so the case can still be
+sent by hand. It never claims a delivery that did not happen.
+
+To go live:
+
+1. Set `forms.endpoint` to a URL that accepts `POST application/json`
+   (a serverless function, Formspree, Supabase edge function — anything).
+2. Set `privacy.storageLive = true` and `privacy.storeName` so `/privacy`
+   describes where submissions actually land.
+3. Image uploads: only a `hasImage` boolean is sent today, not the file. If you
+   want the file, switch the request to `FormData` and accept
+   `multipart/form-data` on the endpoint, then update the privacy page.
+
+---
+
+## The feedback loop
+
+The site is built to learn from the people using it, not just talk at them. Four
+small signals feed an editorial calendar that would otherwise be guesswork.
+
+| Signal | Fires when | Answers |
+|---|---|---|
+| `ingredient_search` | someone searches the database | what people are actually looking for |
+| `ingredient_search_zero` | a search returns nothing | **exactly which ingredients to add next** |
+| `case_filter` | a category pill is tapped | which verticals deserve the next investigation |
+| `case_submitted` | an intake form is sent | demand, ranked by volume and type |
+| `verdict_feedback` | answered / partly / still open | which verdicts landed, which need a follow-up |
+
+`case_search`-style zero-result events are the highest-value signal on the site:
+they are a person naming something the lab does not cover yet.
+
+### Consent
+
+Nothing is recorded until the visitor presses **Allow** on the first-visit
+prompt (`src/components/ConsentBanner.jsx`). Declining is one tap, is remembered,
+and can be changed later from the footer's **Data settings** link or `/privacy`
+— both call `openConsentSettings()`.
+
+`track()` in `src/lib/signals.js` returns immediately unless consent is
+`granted`. There is **no pre-consent buffering and no replay**, and no
+third-party script anywhere in the build. Event props are non-personal by
+design: never a name, email, handle or file.
+
+### Where signals go
+
+Signals stay in memory until an endpoint exists. Set:
+
+```
+VITE_SIGNALS_ENDPOINT=https://your-endpoint.example/signals
+```
+
+in `.env.local` (see `.env.example`). Each request is a JSON `POST` with
+`{ event, props, path, ts, sid }` where `sid` is a random per-tab id — not a
+person. With no endpoint, events only reach the dev console.
+
+### Reviewing them
+
+Weekly, fifteen minutes: read the top zero-result searches, the filter
+distribution and the submission types, then choose the next investigation from
+that list rather than from a hunch. The loop is only a loop if the output changes
+what you publish.
+
+### Extending it
+
+Add an event by calling `track('name', { ...nonPersonalProps })` at the point of
+interaction. Keep props flat and small. Update the table on `/privacy` and this
+list in the same commit — the privacy page is the contract, not decoration.
 
 ---
 
