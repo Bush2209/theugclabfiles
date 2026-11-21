@@ -292,14 +292,32 @@ export default function Privacy() {
         <div className="section">
           <p className="label-mono text-ink/45">Questions about this page</p>
           <p className="mt-3 max-w-prose2 text-[15.5px] leading-relaxed text-ink/70">
-            Write to{' '}
-            <a
-              href={`mailto:${site.email}`}
-              className="font-mono text-[13px] text-ink underline decoration-ink/25 underline-offset-4 hover:decoration-ink"
-            >
-              {site.email}
-            </a>
-            . If you have already submitted something and want it removed, say so and it goes.
+            {site.email ? (
+              <>
+                Write to{' '}
+                <a
+                  href={`mailto:${site.email}`}
+                  className="font-mono text-[13px] text-ink underline decoration-ink/25 underline-offset-4 hover:decoration-ink"
+                >
+                  {site.email}
+                </a>
+                .
+              </>
+            ) : (
+              <>
+                Send a DM to{' '}
+                <a
+                  href={site.social[0].href}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-mono text-[13px] text-ink underline decoration-ink/25 underline-offset-4 hover:decoration-ink"
+                >
+                  {site.social[0].handle} on Instagram
+                </a>
+                .
+              </>
+            )}{' '}
+            If you have already submitted something and want it removed, say so and it goes.
           </p>
         </div>
       </section>

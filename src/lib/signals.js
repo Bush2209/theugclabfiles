@@ -33,7 +33,7 @@ export const CONSENT_EVENT = 'ugc:consent-change';
 export const CONSENT_OPEN_EVENT = 'ugc:consent-open';
 
 // Build-time config. Empty string = record locally, send nothing.
-const ENDPOINT = (import.meta.env.VITE_SIGNALS_ENDPOINT ?? '').trim();
+const ENDPOINT = (import.meta.env.VITE_SIGNALS_ENDPOINT || '/api/signals').trim();
 
 /** In-memory only. Never persisted, so a refresh forgets everything. */
 const buffer = [];

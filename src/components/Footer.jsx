@@ -102,12 +102,24 @@ export default function Footer() {
 
             <div className="mt-8">
               <p className="label-mono mb-3 text-ink/40">DIRECT LINE</p>
-              <a
-                href={`mailto:${site.email}`}
-                className="break-all font-mono text-[12px] text-ink/70 underline decoration-ink/25 underline-offset-4 transition-colors hover:decoration-ink"
-              >
-                {site.email}
-              </a>
+              {site.email ? (
+                <a
+                  href={`mailto:${site.email}`}
+                  className="break-all font-mono text-[12px] text-ink/70 underline decoration-ink/25 underline-offset-4 transition-colors hover:decoration-ink"
+                >
+                  {site.email}
+                </a>
+              ) : (
+                <a
+                  href={site.social[0].href}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 font-mono text-[12px] text-ink/70 underline decoration-ink/25 underline-offset-4 transition-colors hover:decoration-ink"
+                >
+                  DM {site.social[0].handle} on Instagram
+                  <span aria-hidden="true">↗</span>
+                </a>
+              )}
             </div>
           </div>
         </div>

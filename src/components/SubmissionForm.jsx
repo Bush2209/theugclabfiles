@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import Reveal from './Reveal';
 import { site, submissionTypes } from '../data/site';
 import { track } from '../lib/signals';
+import { getSource } from '../lib/attribution';
 import { CrossMark, Squiggle } from './Doodles';
 
 /**
@@ -78,6 +79,7 @@ export default function SubmissionForm({ initial = null, caseSlug = '' }) {
       why: values.why.trim(),
       hasImage: Boolean(values.image),
       case: caseSlug || null,
+      source: getSource(),
     };
 
     try {
@@ -98,6 +100,7 @@ export default function SubmissionForm({ initial = null, caseSlug = '' }) {
         has_contact: Boolean(draft.contact),
         has_image: draft.hasImage,
         case: draft.case,
+        source: draft.source,
         delivered: Boolean(endpoint),
       });
 
@@ -379,7 +382,7 @@ function Field({
 
 /** Playful success state. Honest about whether anything was actually sent. */
 function SuccessState({ caseRef, demo, draft }) {
-  const mailtoHref = demo
+  const fallbackHref = site.email
     ? `mailto:${site.email}?subject=${encodeURIComponent(`Case submission — ${draft.product}`)}&body=${encodeURIComponent(
         [
           `Product: ${draft.product}`,
@@ -393,7 +396,7 @@ function SuccessState({ caseRef, demo, draft }) {
           .filter(Boolean)
           .join('\n')
       )}`
-    : '';
+    : site.social[0].href;
 
   return (
     <Reveal className="relative">
@@ -446,8 +449,8 @@ function SuccessState({ caseRef, demo, draft }) {
                 Nothing was transmitted. Send the draft from your mail app and it reaches the lab
                 properly — subject, product and question are already filled in.
               </p>
-              <a href={mailtoHref} className="btn-primary mt-4 w-full">
-                Send it by email
+              <a href={fallbackHref} className="btn-primary mt-4 w-full" target={site.email ? undefined : '_blank'} rel={site.email ? undefined : 'noreferrer'}>
+                {site.email ? 'Send it by email' : 'Send it on Instagram'}
                 <span aria-hidden="true">→</span>
               </a>
             </div>

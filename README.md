@@ -31,6 +31,7 @@ npm run qa       # visual + a11y + interaction sweep (see QA)
 | `/submit` | Submit a Case | Validated intake form + honest success state (demo mode until an endpoint is set) |
 | `/work-with-me` | Work With Me | Services, portfolio grid, video lightbox |
 | `/privacy` | Privacy & Data | Consent state, what is recorded, how to withdraw |
+| `/links` | Bio-link hub | Instagram + YouTube follow buttons, newest case, shortcuts, attribution |
 | anything else | Not Found | |
 
 Case and ingredient detail pages redirect to their index if the slug is unknown.
@@ -57,6 +58,9 @@ illustrative sample copy written to demonstrate the system.** Specifically:
 - The intake form has no endpoint configured, so it runs in demo mode and says so
   instead of pretending a submission was delivered. See
   [Wiring up the form](#wiring-up-the-form).
+- The Instagram and YouTube URLs in `src/data/site.js` are built from the
+  `@theuginvestigator` handle. **Verify both before putting `/links` in a bio** —
+  a wrong URL there is worse than no URL.
 
 To publish: replace the copy, add real sources to `ingredients[].sources`, drop
 in real media URLs, set `isPlaceholder: false`, then delete `PlaceholderNotice`
@@ -123,20 +127,37 @@ for names that appear on labels but are not profiled yet (they render as muted
 ### Wiring up the form
 
 `SubmissionForm` validates in the browser, then POSTs JSON to
-`site.forms.endpoint` in `src/data/site.js`. With that value empty the form runs
-in **demo mode**: it validates and shows a "Case drafted" state that says plainly
-nothing was transmitted, plus a pre-filled `mailto:` so the case can still be
-sent by hand. It never claims a delivery that did not happen.
+`site.forms.endpoint` — currently `/api/intake`, a Vercel Function that creates
+one GitHub Issue per submission in the **private**
+`Bush2209/theugclabfiles-intake` repo. Each issue is labelled by type, source and
+linked case, so submissions can be triaged, discussed and closed from GitHub's
+web UI or `gh`. The issue number becomes the case reference shown to the visitor.
 
-To go live:
+With `forms.endpoint` empty the form still runs in **demo mode**: it says plainly
+that nothing was transmitted instead of faking a delivery. That is the fallback,
+not the current setup.
 
-1. Set `forms.endpoint` to a URL that accepts `POST application/json`
-   (a serverless function, Formspree, Supabase edge function — anything).
-2. Set `privacy.storageLive = true` and `privacy.storeName` so `/privacy`
-   describes where submissions actually land.
-3. Image uploads: only a `hasImage` boolean is sent today, not the file. If you
-   want the file, switch the request to `FormData` and accept
-   `multipart/form-data` on the endpoint, then update the privacy page.
+To read submissions:
+
+```bash
+gh issue list -R Bush2209/theugclabfiles-intake --label submission
+gh issue view 12 -R Bush2209/theugclabfiles-intake
+```
+
+Image uploads: only a `hasImage` boolean is sent today, not the file. If you want
+the file, switch the request to `FormData` and accept `multipart/form-data` on the
+endpoint, then update the privacy page.
+
+### The bio-link hub
+
+`/links` is the page to put in Instagram and YouTube bios. Instagram and YouTube
+are the only platforms featured; there is no placeholder email. It shows the two
+follow buttons, the newest case file, shortcuts into the lab, and a submit CTA.
+
+Bio URLs carry attribution: `…/links?src=ig` and `…/links?src=yt`. The value is
+kept in sessionStorage for the visit (`src/lib/attribution.js`) and attached to
+submissions and signals, so you can tell which platform is actually sending
+people — not just which one has more followers.
 
 ---
 
@@ -152,9 +173,11 @@ small signals feed an editorial calendar that would otherwise be guesswork.
 | `case_filter` | a category pill is tapped | which verticals deserve the next investigation |
 | `case_submitted` | an intake form is sent | demand, ranked by volume and type |
 | `verdict_feedback` | answered / partly / still open | which verdicts landed, which need a follow-up |
+| `bio_visit` | someone lands on `/links` from a bio | which platform sends people to the site |
+| `bio_link_click` | a follow / shortcut / submit link is tapped | what those visitors actually want |
 
-`case_search`-style zero-result events are the highest-value signal on the site:
-they are a person naming something the lab does not cover yet.
+`ingredient_search_zero` is the highest-value signal on the site: it is a person
+naming something the lab does not cover yet.
 
 ### Consent
 
@@ -170,15 +193,33 @@ design: never a name, email, handle or file.
 
 ### Where signals go
 
-Signals stay in memory until an endpoint exists. Set:
+Both endpoints are Vercel Functions in `/api`. The SPA rewrite in `vercel.json`
+uses a negative lookahead so `/api/*` reaches the functions instead of being
+swallowed by the client-side fallback.
 
-```
-VITE_SIGNALS_ENDPOINT=https://your-endpoint.example/signals
+- `api/intake.js` → creates a GitHub Issue in the private intake repo.
+- `api/signals.js` → appends one JSON line to `signals/YYYY-MM-DD.jsonl`.
+
+Vercel project variables (set in the dashboard or with `vercel env add`):
+
+| Variable | Type | Value |
+| --- | --- | --- |
+| `GITHUB_REPO` | Config | `Bush2209/theugclabfiles-intake` |
+| `GITHUB_TOKEN` | Secret | token with write access to that private repo |
+
+The client signals endpoint defaults to `/api/signals` and can be overridden with
+`VITE_SIGNALS_ENDPOINT`. `VITE_*` values are public by design — never put a
+secret in one.
+
+Reading signals from the private repo:
+
+```bash
+gh api repos/Bush2209/theugclabfiles-intake/contents/signals/2026-11-21.jsonl \
+  --jq .content | base64 -D
 ```
 
-in `.env.local` (see `.env.example`). Each request is a JSON `POST` with
-`{ event, props, path, ts, sid }` where `sid` is a random per-tab id — not a
-person. With no endpoint, events only reach the dev console.
+Each line is `{ event, props, path, ts, sid }`; `sid` is a random per-tab id, not
+a person. With no endpoint configured, events only reach the dev console.
 
 ### Reviewing them
 

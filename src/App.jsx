@@ -4,6 +4,7 @@ import Navigation from './components/Navigation';
 import Footer from './components/Footer';
 import ConsentBanner from './components/ConsentBanner';
 import Home from './pages/Home';
+import { captureSource } from './lib/attribution';
 
 /*
  * The homepage ships in the main bundle; every other route is split out and
@@ -18,6 +19,7 @@ const Lab = lazy(() => import('./pages/Lab'));
 const SubmitCase = lazy(() => import('./pages/SubmitCase'));
 const WorkWithMe = lazy(() => import('./pages/WorkWithMe'));
 const Privacy = lazy(() => import('./pages/Privacy'));
+const Links = lazy(() => import('./pages/Links'));
 
 /** Scrolls to top on navigation, but honours in-page hash links. */
 function ScrollManager() {
@@ -80,6 +82,10 @@ export default function App() {
   // Keyed on pathname so the page-transition animation replays on navigation.
   const { pathname } = useLocation();
 
+  useEffect(() => {
+    captureSource(window.location.search);
+  }, [pathname]);
+
   return (
     <>
       <ScrollManager />
@@ -97,6 +103,7 @@ export default function App() {
             <Route path="/submit" element={<SubmitCase />} />
             <Route path="/work-with-me" element={<WorkWithMe />} />
             <Route path="/privacy" element={<Privacy />} />
+            <Route path="/links" element={<Links />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>

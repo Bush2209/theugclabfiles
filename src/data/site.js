@@ -19,11 +19,11 @@ export const site = {
     currently: 'SKINCARE CLAIMS',
   },
   social: [
-    { label: 'Instagram', handle: '@theuginvestigator', href: 'https://instagram.com/' },
-    { label: 'YouTube', handle: '/theuginvestigator', href: 'https://youtube.com/' },
-    { label: 'TikTok', handle: '@theuginvestigator', href: 'https://tiktok.com/' },
+    { label: 'Instagram', handle: '@theuginvestigator', href: 'https://www.instagram.com/theuginvestigator/' },
+    { label: 'YouTube', handle: '@theuginvestigator', href: 'https://www.youtube.com/@theuginvestigator' },
   ],
-  email: 'hello@theuginvestigator.com',
+  // No email is published. The Instagram DM is the direct line.
+  email: '',
   platforms: ['Instagram', 'YouTube', 'TikTok'],
 
   /**
@@ -36,8 +36,7 @@ export const site = {
    * serverless function, Formspree, or a Supabase edge function.
    */
   forms: {
-    endpoint: '',
-    // Shown in the success state when `endpoint` is empty.
+    endpoint: '/api/intake',
     demoNotice: true,
   },
 
@@ -48,8 +47,8 @@ export const site = {
    * before it actually is.
    */
   privacy: {
-    storageLive: false,
-    storeName: '',
+    storageLive: true,
+    storeName: 'a private GitHub repository',
   },
 };
 
@@ -63,6 +62,7 @@ export const navLinks = [
 ];
 
 export const footerLinks = [
+  { label: 'LINK HUB', to: '/links' },
   { label: 'CASE FILES', to: '/case-files' },
   { label: 'INGREDIENT DATABASE', to: '/ingredients' },
   { label: 'THE LAB', to: '/lab' },

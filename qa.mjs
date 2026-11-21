@@ -35,6 +35,7 @@ const ROUTES = [
   { path: '/submit', name: 'submit' },
   { path: '/work-with-me', name: 'work' },
   { path: '/privacy', name: 'privacy' },
+  { path: '/links', name: 'links' },
   { path: '/does-not-exist', name: 'not-found' },
 ];
 
@@ -206,6 +207,20 @@ for (const vp of VIEWPORTS) {
 const ctx = await browser.newContext({ viewport: { width: 1440, height: 950 }, deviceScaleFactor: 2 });
 const page = await ctx.newPage();
 page.on('pageerror', (e) => consoleErrors.push(`[interaction] ${e.message}`));
+
+/*
+ * /api routes are Vercel Functions and do not exist under `vite dev`. Mock
+ * them here so the browser flow is tested end to end; the real endpoints are
+ * verified against the deployed URL separately.
+ */
+await page.route('**/api/intake', (route) =>
+  route.fulfill({
+    status: 201,
+    contentType: 'application/json',
+    body: JSON.stringify({ ok: true, ref: 'INTAKE #001', issue: 'https://github.com/' }),
+  })
+);
+await page.route('**/api/signals', (route) => route.fulfill({ status: 204, body: '' }));
 const assert = (label, ok) => {
   console.log(`${ok ? '✓' : '✗'} ${label}`);
   if (!ok) failures.push(`interaction: ${label}`);
@@ -270,6 +285,32 @@ await page.waitForTimeout(250);
 const withdrawn = await page.evaluate(() => localStorage.getItem('ugc-lab:consent'));
 assert(`consent can be withdrawn (${withdrawn})`, withdrawn === 'denied');
 
+// ---- bio link hub + platform attribution -----------------------------------
+await page.evaluate(() => localStorage.setItem('ugc-lab:consent', 'granted'));
+await page.goto(`${BASE}/links?src=ig`, { waitUntil: 'networkidle' });
+await page.waitForTimeout(400);
+const followLinks = await page
+  .locator('section')
+  .filter({ hasText: 'Keep up with the investigations' })
+  .first()
+  .locator('a')
+  .evaluateAll((els) => els.map((el) => el.href));
+assert(
+  'bio hub offers Instagram + YouTube only',
+  followLinks.length === 2 &&
+    followLinks.filter((h) => h.includes('instagram.com')).length === 1 &&
+    followLinks.filter((h) => h.includes('youtube.com')).length === 1,
+  followLinks.join(', ')
+);
+const storedSource = await page.evaluate(() => sessionStorage.getItem('ugc-lab:src'));
+assert(`attribution stored (${storedSource})`, storedSource === 'ig');
+assert('bio hub shows the source', (await page.getByText(/from instagram/i).count()) > 0);
+const bioSignals = await page.evaluate(() => window.__ugcSignals?.() ?? []);
+assert(
+  'bio visit recorded with source',
+  bioSignals.some((s) => s.event === 'bio_visit' && s.props.source === 'ig')
+);
+
 // ---- intake form -----------------------------------------------------------
 await page.goto(`${BASE}/submit`, { waitUntil: 'networkidle' });
 await page.getByRole('button', { name: /send to the lab/i }).click();
@@ -283,11 +324,11 @@ await page.getByRole('button', { name: /send to the lab/i }).click();
 await page.waitForTimeout(1300);
 assert(
   'form reaches success state',
-  (await page.getByText(/case (received|drafted)/i).count()) > 0
+  (await page.getByText(/case received/i).count()) > 0
 );
 assert(
-  'success state is honest about delivery',
-  (await page.getByText(/nothing was transmitted/i).count()) > 0
+  'success state reports delivery',
+  (await page.getByText(/evidence successfully entered the lab/i).count()) > 0
 );
 await page.screenshot({ path: `${OUT}/interaction-form-success.png` });
 
